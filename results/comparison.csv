@@ -1,0 +1,4 @@
+model,accuracy,precision,recall,f1
+baseline,0.5503,0.5598,0.9197,0.696
+cnn_fusion,0.5598,0.5598,1.0,0.7178
+finbert_fusion,0.5598,0.5598,1.0,0.7178

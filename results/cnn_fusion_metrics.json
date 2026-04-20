@@ -1,0 +1,7 @@
+{
+  "model": "cnn_fusion",
+  "accuracy": 0.5598,
+  "precision": 0.5598,
+  "recall": 1.0,
+  "f1": 0.7178
+}

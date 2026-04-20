@@ -1,0 +1,7 @@
+{
+  "model": "baseline",
+  "accuracy": 0.5503,
+  "precision": 0.5598,
+  "recall": 0.9197,
+  "f1": 0.696
+}
