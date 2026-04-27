@@ -1,7 +1,7 @@
 {
   "model": "finbert_fusion",
-  "accuracy": 0.5598,
-  "precision": 0.5598,
-  "recall": 1.0,
-  "f1": 0.7178
+  "accuracy": 0.5094,
+  "precision": 0.5212,
+  "recall": 0.4982,
+  "f1": 0.5094
 }

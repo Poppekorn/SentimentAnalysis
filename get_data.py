@@ -3,6 +3,8 @@ Christopher Bryant | ITCS-5154
 """
 import pandas as pd
 import yfinance as yf
+import requests
+import time
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.historical.news import NewsClient
 from alpaca.data.requests import StockBarsRequest, NewsRequest
@@ -26,7 +28,7 @@ def get_prices(ticker, stock_client):
 
 # Pull news  from Alpaca
 def get_news(ticker, news_client):
-    print(f"  {ticker} news...")
+    print(f"  {ticker} news (Alpaca)   ")
     try:
         request = NewsRequest(
             symbols=ticker,
@@ -50,6 +52,39 @@ def get_news(ticker, news_client):
         print(f"    Error: {e}")
         return pd.DataFrame()
 
+# Pull news from Finnhub
+def get_news_finnhub(ticker):
+    print(f"  {ticker} news (Finnhub)   ")
+    try:
+        start = pd.Timestamp(config.START)
+        end = pd.Timestamp(config.END)
+        articles = []
+
+        # Finnhub free tier works best with yearly chunks
+        for year in range(start.year, end.year + 1):
+            y_start = max(start, pd.Timestamp(f"{year}-01-01")).strftime("%Y-%m-%d")
+            y_end = min(end, pd.Timestamp(f"{year}-12-31")).strftime("%Y-%m-%d")
+
+            r = requests.get(
+                "https://finnhub.io/api/v1/company-news",
+                params={"symbol": ticker, "from": y_start, "to": y_end,
+                        "token": config.FINNHUB_KEY},
+                timeout=30,
+            )
+            r.raise_for_status()
+            for a in r.json():
+                articles.append({
+                    "ticker": ticker,
+                    "date": pd.to_datetime(a["datetime"], unit="s").tz_localize(None),
+                    "headline": a["headline"],
+                })
+            time.sleep(1.1)  # stay under 60 req/min free-tier cap
+
+        return pd.DataFrame(articles)
+    except Exception as e:
+        print(f"    Error: {e}")
+        return pd.DataFrame()
+
 # Pull VIX from Yahoo Finance (Alpaca doesn't have it)
 def get_vix():
     print("Pulling VIX  ")
@@ -65,13 +100,25 @@ if __name__ == "__main__":
     if not config.ALPACA_KEY or not config.ALPACA_SECRET:
         print("Set ALPACA_API_KEY and ALPACA_SECRET_KEY in .env first!")
         exit()
+    if not config.FINNHUB_KEY:
+        print("Set FINNHUB_API_KEY in .env first!")
+        exit()
 
     stock_client = StockHistoricalDataClient(config.ALPACA_KEY, config.ALPACA_SECRET)
     news_client = NewsClient(config.ALPACA_KEY, config.ALPACA_SECRET)
 
     vix = get_vix()
     prices = pd.concat([get_prices(t, stock_client) for t in config.TICKERS])
-    news = pd.concat([get_news(t, news_client) for t in config.TICKERS], ignore_index=True)
+
+    alpaca_news = pd.concat([get_news(t, news_client) for t in config.TICKERS], ignore_index=True)
+    finnhub_news = pd.concat([get_news_finnhub(t) for t in config.TICKERS], ignore_index=True)
+
+    print(f"\n  Alpaca: {len(alpaca_news)} headlines")
+    print(f"  Finnhub: {len(finnhub_news)} headlines")
+
+    news = pd.concat([alpaca_news, finnhub_news], ignore_index=True)
+    news = news.drop_duplicates(subset=["ticker", "date", "headline"]).reset_index(drop=True)
+    print(f"  Combined (deduped): {len(news)} headlines")
 
     vix.to_parquet(config.DATA_RAW / "vix.parquet", index=False)
     prices.to_parquet(config.DATA_RAW / "ohlcv.parquet", index=False)

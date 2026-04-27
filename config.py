@@ -21,11 +21,12 @@ for p in [DATA_RAW, DATA_PROCESSED, CHECKPOINTS, RESULTS]:
 # API keys see .env (.gitignore)
 ALPACA_KEY = os.getenv("ALPACA_API_KEY")
 ALPACA_SECRET = os.getenv("ALPACA_SECRET_KEY")
+FINNHUB_KEY = os.getenv("FINNHUB_API_KEY")
 
 # Stocks to study (https://finance.yahoo.com/quote/%5EVIX/)
-TICKERS = ["AAPL", "TSLA", "NVDA", "NFLX", "JNJ"]
-START = "2022-01-01"
-END = "2024-12-31"
+TICKERS = ['AAPL','TSLA','NVDA','NFLX','JNJ']
+START = "2024-04-23"
+END = "2026-04-23"
 VIX = "^VIX" 
 
 # Technical indicators (TA-Lib)

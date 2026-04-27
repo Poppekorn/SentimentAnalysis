@@ -104,7 +104,13 @@ if __name__ == "__main__":
     # Build model + optimizer + loss (Module 9 lab pattern)
     model = build_model(args.model, num_features=len(feature_cols)).to(config.DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=config.LR)
-    criterion = nn.BCEWithLogitsLoss()
+    # Class-balanced loss to counter majority-class bias
+    labels_train = train_df["label"].values
+    n_pos = (labels_train == 1).sum()
+    n_neg = (labels_train == 0).sum()
+    pos_weight = torch.tensor([n_neg / n_pos], dtype=torch.float32, device=config.DEVICE)
+    print(f"Class balance — Up: {n_pos}, Down: {n_neg}, pos_weight: {pos_weight.item():.3f}")
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     # Training loop with early stopping
     best_val_loss = float("inf")
